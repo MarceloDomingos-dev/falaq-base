@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Evento;
 use App\Models\Pergunta;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -11,8 +12,21 @@ class Sprint01Test extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_anonymous_users_cannot_submit_questions(): void
+    {
+        $evento = Evento::create(['titulo' => 'Evento']);
+
+        $this->postJson(route('eventos.perguntas.store', $evento->id), [
+            'evento_id' => $evento->id,
+            'texto' => 'Uma pergunta válida?',
+        ])->assertUnauthorized();
+
+        $this->assertDatabaseCount('perguntas', 0);
+    }
+
     public function test_invalid_questions_return_422_without_being_saved(): void
     {
+        $this->actingAs(User::factory()->create());
         $evento = Evento::create(['titulo' => 'Evento']);
         $url = route('eventos.perguntas.store', $evento->id);
 
@@ -36,6 +50,7 @@ class Sprint01Test extends TestCase
 
     public function test_valid_questions_at_both_length_limits_are_saved(): void
     {
+        $this->actingAs(User::factory()->create());
         $evento = Evento::create(['titulo' => 'Evento']);
 
         foreach ([10, 255] as $length) {
@@ -53,14 +68,28 @@ class Sprint01Test extends TestCase
         $evento = Evento::create(['titulo' => 'Evento']);
         $outro = Evento::create(['titulo' => 'Outro']);
         for ($i = 1; $i <= 12; $i++) {
-            $pergunta = Pergunta::create(['evento_id' => $evento->id, 'texto' => "Pergunta número $i"]);
+            $pergunta = Pergunta::create([
+                'evento_id' => $evento->id,
+                'texto' => "Pergunta número $i",
+                'is_public' => true,
+            ]);
             $pergunta->created_at = now()->subMinutes(13 - $i);
             $pergunta->save();
         }
-        Pergunta::create(['evento_id' => $outro->id, 'texto' => 'Pergunta de outro evento']);
+        Pergunta::create([
+            'evento_id' => $evento->id,
+            'texto' => 'Pergunta pendente de moderação',
+        ]);
+        Pergunta::create([
+            'evento_id' => $outro->id,
+            'texto' => 'Pergunta de outro evento',
+            'is_public' => true,
+        ]);
 
         $response = $this->get(route('eventos.show', $evento->id));
-        $response->assertOk()->assertDontSee('Pergunta de outro evento')
+        $response->assertOk()
+            ->assertDontSee('Pergunta de outro evento')
+            ->assertDontSee('Pergunta pendente de moderação')
             ->assertSee('page=2')->assertSee('class="pagination"', false)
             ->assertSee('name="evento_id" value="'.$evento->id.'"', false);
         $paginator = $response->viewData('perguntas');
@@ -68,6 +97,7 @@ class Sprint01Test extends TestCase
         $this->assertCount(10, $paginator->items());
         $this->assertSame('Pergunta número 12', $paginator->first()->texto);
         $this->assertSame('Pergunta número 3', $paginator->last()->texto);
+        $this->assertTrue($paginator->first()->relationLoaded('user'));
         $this->assertFalse($response->viewData('evento')->relationLoaded('perguntas'));
 
         $page2 = $this->get(route('eventos.show', ['id' => $evento->id, 'page' => 2]));
