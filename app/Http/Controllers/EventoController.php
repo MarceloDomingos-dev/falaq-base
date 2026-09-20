@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\EventoFormRequest;
 use App\Http\Requests\StorePerguntaRequest;
 use App\Models\Evento;
 use App\Models\Pergunta;
+use Illuminate\Support\Facades\Auth;
 
 class EventoController extends Controller
 {
@@ -37,11 +39,22 @@ class EventoController extends Controller
 
         Pergunta::create([
             'evento_id' => $evento->id,
-            'texto' => $request->input('texto'),
-            'status' => 'pendente',
+            'user_id' => Auth::id(),
+            'texto'     => $request->input('texto'),
+            'status'    => 'pendente',
         ]);
 
         return redirect()->route('eventos.show', $evento->id)
             ->with('sucesso', 'Sua pergunta foi enviada com sucesso!');
+    }
+
+
+    public function create(){
+        return view('eventos.create');
+    }
+
+    public function store(EventoFormRequest $req){
+        $evento = $req->user()->eventos()->create($req->validated());
+        return redirect()->route('eventos.show', $evento->id);
     }
 }

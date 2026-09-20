@@ -48,6 +48,11 @@ class User extends Authenticatable
         ];
     }
 
+    public function eventos(): HasMany
+    {
+        return $this->hasMany(Evento::class);
+    }
+
     public function perguntas(): HasMany
     {
         return $this->hasMany(Pergunta::class);
