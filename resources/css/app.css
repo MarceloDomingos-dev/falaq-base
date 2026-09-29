@@ -1,3 +1,6 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Bootstrap supplies the base styles; keep Tailwind utilities outside layers. */
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css";
+
+/* The existing layout uses Bootstrap's responsive container. */
+@source not inline("container");
