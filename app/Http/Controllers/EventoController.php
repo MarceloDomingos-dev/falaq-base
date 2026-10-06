@@ -6,10 +6,13 @@ use App\Http\Requests\EventoFormRequest;
 use App\Models\Evento;
 use App\Models\Pergunta;
 use App\Http\Requests\StorePerguntaRequest;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Auth;
 
 class EventoController extends Controller
 {
+    use AuthorizesRequests;
+
     public function index()
     {
         $eventos = Evento::all();
@@ -18,9 +21,9 @@ class EventoController extends Controller
 
     public function show($id)
     {
-        $evento = Evento::find($id);
+        $evento = Evento::findOrFail($id);
 
-        $perguntas = Pergunta::all();
+        $perguntas = $evento->perguntas()->latest()->get();
 
         return view('eventos.show', compact('evento', 'perguntas'));
     }
@@ -39,6 +42,19 @@ class EventoController extends Controller
 
         return redirect()->route('eventos.show', $evento->id)
             ->with('sucesso', 'Sua pergunta foi enviada com sucesso!');
+    }
+
+    public function destroyPergunta($id, $pergunta)
+    {
+        $evento = Evento::findOrFail($id);
+        $pergunta = $evento->perguntas()->findOrFail($pergunta);
+
+        $this->authorize('delete', $pergunta);
+
+        $pergunta->delete();
+
+        return redirect()->route('eventos.show', $evento->id)
+            ->with('sucesso', 'Pergunta excluída com sucesso!');
     }
 
     public function create(){
