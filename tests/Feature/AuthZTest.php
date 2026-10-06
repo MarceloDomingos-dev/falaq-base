@@ -27,7 +27,6 @@ class AuthZTest extends TestCase
     {
         parent::setUp();
 
-        $this->withoutVite();
         $this->dono = User::factory()->create();
         $this->autor = User::factory()->create();
         $this->outro = User::factory()->create();
