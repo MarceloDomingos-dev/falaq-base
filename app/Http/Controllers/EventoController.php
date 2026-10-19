@@ -22,9 +22,16 @@ class EventoController extends Controller
 
     public function show(string $id)
     {
-        $evento = Evento::find($id);
+        $evento = Evento::findOrFail($id);
 
-        $perguntas = Pergunta::all();
+        // Ranking: perguntas do evento ordenadas pelo número de votos
+        $perguntas = $evento->perguntas()
+            ->withCount('votos')
+            // Marca se o usuário logado já votou em cada pergunta
+            ->withExists(['votos as votada_pelo_usuario' => fn ($q) => $q->where('users.id', Auth::id())])
+            ->orderByDesc('votos_count')
+            ->latest()
+            ->get();
 
         return view('eventos.show', compact('evento', 'perguntas'));
     }
