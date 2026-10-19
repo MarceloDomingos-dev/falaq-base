@@ -84,7 +84,6 @@ class UpvotePerguntaTest extends TestCase
         $muitos->votos()->attach($users->pluck('id'));
         $poucos->votos()->attach($users->first()->id);
 
-        $this->withoutVite();
         $response = $this->get(route('eventos.show', $evento->id));
 
         $response->assertOk();
