@@ -17,7 +17,17 @@
                 </button>
             </form>
         @endauth
+
+        @can('moderate', $evento)
+            <a href="{{ route('eventos.moderacoes.index', $evento) }}" class="px-4 py-2 text-sm font-medium rounded-md bg-yellow-500 hover:bg-yellow-600 text-black">
+                🛡️ Fila de Moderação
+            </a>
+        @endcan
     </div>
+    @error('motivo')
+        <div class="alert alert-danger">{{ $message }}</div>
+    @enderror
+
     <!-- Formularço de envio de Pergunta -->
     <div class="col-md-5 mb-4">
         <div class="card shadow-sm p-3">
@@ -76,6 +86,20 @@
                         <span>Status: <span class="badge bg-success">{{ $pergunta->status }}</span></span>
                         <span>{{ $pergunta->created_at->format('d/m/Y H:i') }}</span>
                     </div>
+
+                    <!-- TICKET #016: Denunciar pergunta -->
+                    @auth
+                        <details class="mt-2">
+                            <summary class="small text-warning" style="cursor: pointer">🚩 Denunciar pergunta</summary>
+                            <form action="{{ route('perguntas.moderar', $pergunta) }}" method="POST" class="mt-2">
+                                @csrf
+                                <textarea name="motivo" rows="2" maxlength="255"
+                                          class="form-control bg-dark text-white border-secondary mb-2"
+                                          placeholder="Descreva o motivo (mín. 10 caracteres)"></textarea>
+                                <button type="submit" class="btn btn-outline-warning btn-sm">Enviar denúncia</button>
+                            </form>
+                        </details>
+                    @endauth
                 </div>
             </div>
         @empty
